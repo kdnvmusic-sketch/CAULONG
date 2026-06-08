@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -153,18 +154,20 @@ button:active{transform:scale(.97)}
 .smamt{font-size:12px;font-weight:700;color:var(--g);white-space:nowrap}
 .sess-acts{display:flex;gap:6px;justify-content:flex-end;padding-top:.5rem;border-top:1px solid var(--bdr);margin-top:.5rem}
 
-/* ROSTER */
-.roster-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(185px,1fr));gap:6px;margin-top:.375rem}
-.rc{display:flex;align-items:center;gap:8px;background:var(--bg);border:1.5px solid var(--bdr);border-radius:var(--rs);padding:8px 10px;cursor:pointer;transition:border-color .12s,background .12s;user-select:none}
+/* ROSTER — Desktop 16:9: 3 cột */
+.roster-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:.375rem}
+.rc{display:flex;align-items:flex-start;gap:10px;background:var(--bg);border:1.5px solid var(--bdr);border-radius:var(--rs);padding:10px 12px;cursor:pointer;transition:border-color .12s,background .12s;user-select:none;min-width:0}
 .rc:hover{border-color:var(--bdr2);background:#f8fafc}
 .rc.sel{border-color:var(--g);background:var(--gl)}
 .rc.sel .rc-name{color:var(--gd)}
-.rc-chk{width:20px;height:20px;border-radius:6px;border:1.5px solid var(--bdr2);background:var(--surf);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:12px;color:#fff;transition:all .12s}
+.rc-chk{width:20px;height:20px;min-width:20px;border-radius:6px;border:1.5px solid var(--bdr2);background:var(--surf);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:12px;color:#fff;transition:all .12s;margin-top:2px}
 .rc.sel .rc-chk{background:var(--g);border-color:var(--g)}
 .rc-info{flex:1;min-width:0}
-.rc-name{font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.rc-sub{font-size:11px;color:var(--tx3)}
-.rc-acts{display:flex;gap:2px;flex-shrink:0}
+.rc-name{font-size:14px;font-weight:700;line-height:1.35;word-break:break-word;white-space:normal}
+.rc-sub{font-size:11px;color:var(--tx3);margin-top:3px}
+.rc-acts{display:flex;gap:1px;flex-shrink:0;padding-top:1px}
+.rc-acts .btn-icon{font-size:12px;padding:3px 4px;opacity:.45}
+.rc-acts .btn-icon:hover{opacity:1}
 /* Roster action bar */
 .roster-bar{background:var(--gd);border-radius:var(--r);padding:.75rem 1rem;display:none;align-items:center;justify-content:space-between;gap:12px;margin-top:.75rem;position:sticky;bottom:8px;box-shadow:0 4px 20px rgba(0,0,0,.18)}
 .roster-bar.show{display:flex}
@@ -232,8 +235,22 @@ button:active{transform:scale(.97)}
   .topbar{height:50px}
   .brand-text p{display:none}
   #toast{bottom:62px}
-  .roster-grid{grid-template-columns:repeat(auto-fill,minmax(155px,1fr))}
+
+  /* Roster 9:16 portrait — 1 cột, tên đầy đủ */
+  .roster-grid{grid-template-columns:1fr}
+  .rc{align-items:center;padding:11px 14px;gap:12px}
+  .rc-name{font-size:15px}
+  .rc-acts .btn-icon{opacity:.6}
+
+  /* Topbar: ẩn sync-label + ẩn Export/Import text → dùng icon only */
+  .sync-label{display:none}
+  .btn-top .btn-top-lbl{display:none}
+
+  /* Stats vẫn 3 cột */
   .stats-grid{grid-template-columns:repeat(3,1fr)}
+
+  /* Roster bar full-width */
+  .roster-bar{border-radius:0;bottom:52px;left:0;right:0;margin:0}
 }
 @media(min-width:641px){
   .bottom-nav{display:none!important}
@@ -257,9 +274,9 @@ button:active{transform:scale(.97)}
         <div class="sync-dot off" id="sync-dot"></div>
         <span class="sync-label" id="sync-label">Sheets</span>
       </div>
-      <button class="btn-top" onclick="openSettings()">⚙️</button>
-      <button class="btn-top" onclick="exportData()">📤 Export</button>
-      <button class="btn-top" onclick="document.getElementById('file-import').click()">📥 Import</button>
+      <button class="btn-top" onclick="openSettings()" title="Cài đặt">⚙️</button>
+      <button class="btn-top" onclick="exportData()" title="Export">📤 <span class="btn-top-lbl">Export</span></button>
+      <button class="btn-top" onclick="document.getElementById('file-import').click()" title="Import">📥 <span class="btn-top-lbl">Import</span></button>
     </div>
   </div>
 
@@ -1031,12 +1048,15 @@ function renderRoster(){
   const allSel=roster.length>0&&selRoster.size===roster.length;
   document.querySelectorAll('.btn-selall').forEach(b=>b.textContent=allSel?'☑ Bỏ tất cả':'☑ Chọn tất cả');
   if(!roster.length){ el.innerHTML='<div class="empty">Chưa có thành viên nào</div>'; updateRosterBar(); return; }
-  el.innerHTML=roster.map(r=>{
+  const sorted=[...roster].sort((a,b)=>{
+    const ca=sessions.filter(s=>(s.members||[]).find(m=>m.name===a.name)).length;
+    const cb=sessions.filter(s=>(s.members||[]).find(m=>m.name===b.name)).length;
+    return cb-ca;
+  });
+  el.innerHTML=sorted.map(r=>{
     const cnt=sessions.filter(s=>(s.members||[]).find(m=>m.name===r.name)).length;
     const sel=selRoster.has(r.id);
     return `<div class="rc${sel?' sel':''}" onclick="toggleRosterSel('${r.id}',event)">
-      <div class="rc-chk">${sel?'✓':''}</div>
-      ${mkAv(r.name,30)}
       <div class="rc-info">
         <div id="rn-${r.id}" class="rc-name">${r.name}</div>
         <div class="rc-sub">${cnt} buổi</div>
